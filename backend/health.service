@@ -1,0 +1,13 @@
+[Unit]
+Description=the Golang backend for the health data
+Requires=postgresql.service
+
+[Service]
+User=USERNAME
+WorkingDirectory=/home/USERNAME/health/backend
+ExecStart=/home/USERNAME/health/backend/health
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
