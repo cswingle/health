@@ -111,6 +111,43 @@ func logout(w http.ResponseWriter, r *http.Request) {
 	logRequest(r)
 }
 
+// GetLoggedIn returns User if logged in
+func GetLoggedIn(w http.ResponseWriter, r *http.Request, db *sqlx.DB) {
+	var err error
+
+	session, err := store.Get(r, "auth")
+	if err != nil {
+		w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+		w.WriteHeader(http.StatusOK)
+
+		if err := json.NewEncoder(w).Encode("access denied"); err != nil {
+			panic(err)
+		}
+	} else {
+		// Convert our session data into an instance of User
+		user := User{}
+		user, _ = session.Values["user"].(User)
+
+		if user.Username != "" && user.AccessLevel == "admin" {
+			w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+			w.WriteHeader(http.StatusOK)
+
+			if err := json.NewEncoder(w).Encode(user); err != nil {
+				panic(err)
+			}
+		} else {
+			w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+			w.WriteHeader(http.StatusOK)
+
+			if err := json.NewEncoder(w).Encode("access denied"); err != nil {
+				panic(err)
+			}
+		}
+	}
+
+	logRequest(r)
+}
+
 // GetHealth returns data from the health table if logged in
 func GetHealth(w http.ResponseWriter, r *http.Request, db *sqlx.DB) {
 	params := mux.Vars(r)
@@ -352,6 +389,7 @@ func GetHelp(w http.ResponseWriter, r *http.Request) {
 		"GET /health/v1/health/id/{ id }":                    "Get health data by id",
 		"GET /health/v1/health/ts/{ ts }":                    "Get health data by ts",
 		"GET /health/v1/health/variable/{ variable }":        "Get health data by variable",
+		"GET /health/v1/logged_in":                           "Get login status (username)",
 		"GET /health/v1/ref_variables":                       "Get data from ref_variables table",
 		"GET /health/v1/ref_variables/id/{ id }":             "Get ref_variables data by id",
 		"GET /health/v1/ref_variables/variable/{ variable }": "Get ref_variables data by variable",
@@ -429,6 +467,9 @@ func main() {
 	}).Methods("GET")
 	router.HandleFunc("/health/v1/health/variable/{variable}", func(w http.ResponseWriter, r *http.Request) {
 		GetHealth(w, r, db)
+	}).Methods("GET")
+	router.HandleFunc("/health/v1/logged_in", func(w http.ResponseWriter, r *http.Request) {
+		GetLoggedIn(w, r, db)
 	}).Methods("GET")
 	router.HandleFunc("/health/v1/ref_variables", func(w http.ResponseWriter, r *http.Request) {
 		GetRefVariables(w, r, db)

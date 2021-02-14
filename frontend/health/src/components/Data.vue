@@ -6,7 +6,8 @@
       auto-hide-delay="2000"
       v-model="submitSuccess"
     >
-      Uploaded {{ rowsInserted }} <span v-if="rowsInserted > 1">rows</span><span v-else>row</span>
+      Uploaded {{ rowsInserted }} <span v-if="rowsInserted > 1">rows</span
+      ><span v-else>row</span>
     </b-toast>
     <b-toast
       title="Submit Error"
@@ -57,6 +58,10 @@
         </b-col>
       </b-row>
     </b-container>
+    <footer>
+      <p v-if="username.length">Logged in as {{ username }}</p>
+      <p v-else>Not logged in</p>
+    </footer>
   </b-container>
 </template>
 
@@ -70,6 +75,14 @@ export default {
     Health
   },
   async mounted() {
+    await axios.get(this.baseUrl + "/logged_in").then(response => {
+      if (response.data == "access denied") {
+        this.username = "";
+        this.$store.commit("logout");
+      } else {
+        this.username = response.data.Username;
+      }
+    });
     await axios
       .get(this.baseUrl + "/ref_variables")
       .then(
@@ -87,6 +100,7 @@ export default {
       submitSuccess: false,
       submitFail: false,
       rowsInserted: 0,
+      username: "",
       healthEntries: [{ variable: null, value: null }]
     };
   },
@@ -104,7 +118,7 @@ export default {
       let ts = new Date().toISOString();
       let payload = [];
       for (let h of this.healthEntries) {
-        if ((h.variable) && (h.variable.length > 0) && (h.value)) {
+        if (h.variable && h.variable.length > 0 && h.value) {
           let entry = {
             ts: ts,
             username: null,
@@ -164,5 +178,10 @@ li {
 }
 a {
   color: #42b983;
+}
+footer {
+  margin: 10px;
+  font-size: 70%;
+  text-align: center;
 }
 </style>
